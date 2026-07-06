@@ -2,15 +2,17 @@ from datetime import datetime
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.api.v1.endpoints.common import make_api_response, make_paginated_response
 from app.database.session import get_db
+from app.schemas.response import ApiResponse
 from app.schemas.sensor import SensorResponse
 from app.schemas.sensor_management import (
-    SensorRegister,
-    SensorHeartbeat,
     SensorDisconnect,
+    SensorHeartbeat,
+    SensorRegister,
     SensorStatusPatch,
 )
 from app.services.sensor_service import SensorService
@@ -20,29 +22,28 @@ router = APIRouter(prefix="/sensors", tags=["Sensors Management"])
 
 @router.post(
     "/register",
-    response_model=SensorResponse,
+    response_model=ApiResponse[SensorResponse],
     status_code=status.HTTP_201_CREATED,
     summary="Register or update a sensor",
-    description="Register a new sensor or update an existing sensor if the same serial number or MAC address exists.",
+    description="Register a new sensor or update an existing sensor based on serial number or MAC address.",
 )
-def register_sensor(payload: SensorRegister, db: Session = Depends(get_db)):
+def register_sensor(payload: SensorRegister, db: Session = Depends(get_db)) -> dict:
     """Register a sensor. If a sensor with the same `serial_number` or `mac_address` exists, update it."""
     svc = SensorService(db)
     data = payload.model_dump()
     sensor = svc.register(data)
-    return sensor
+    return make_api_response(data=sensor, message="Sensor registered successfully.")
 
 
 @router.post(
     "/heartbeat",
-    response_model=SensorResponse,
+    response_model=ApiResponse[SensorResponse],
     status_code=status.HTTP_200_OK,
     summary="Sensor heartbeat",
-    description="Receive heartbeat messages from sensors. Accepts `sensor_id`, `serial_number`, or `mac_address` to identify the sensor. Updates `last_seen` and sets status to ONLINE by default.",
+    description="Receive heartbeat messages from sensors. Updates last_seen and status.",
 )
-def sensor_heartbeat(payload: SensorHeartbeat, db: Session = Depends(get_db)):
+def sensor_heartbeat(payload: SensorHeartbeat, db: Session = Depends(get_db)) -> dict:
     svc = SensorService(db)
-    # parse timestamp if provided
     ts = None
     if payload.timestamp:
         try:
@@ -58,17 +59,17 @@ def sensor_heartbeat(payload: SensorHeartbeat, db: Session = Depends(get_db)):
     )
     if not sensor:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sensor not found")
-    return sensor
+    return make_api_response(data=sensor, message="Heartbeat recorded successfully.")
 
 
 @router.post(
     "/disconnect",
-    response_model=SensorResponse,
+    response_model=ApiResponse[SensorResponse],
     status_code=status.HTTP_200_OK,
     summary="Sensor disconnect",
-    description="Mark a sensor as disconnected/offline. Accepts `sensor_id`, `serial_number`, or `mac_address` to identify the sensor.",
+    description="Mark a sensor as disconnected / offline.",
 )
-def sensor_disconnect(payload: SensorDisconnect, db: Session = Depends(get_db)):
+def sensor_disconnect(payload: SensorDisconnect, db: Session = Depends(get_db)) -> dict:
     svc = SensorService(db)
     sensor = svc.disconnect(
         sensor_id=str(payload.sensor_id) if payload.sensor_id else None,
@@ -77,29 +78,53 @@ def sensor_disconnect(payload: SensorDisconnect, db: Session = Depends(get_db)):
     )
     if not sensor:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sensor not found")
-    return sensor
+    return make_api_response(data=sensor, message="Sensor disconnected successfully.")
 
 
 @router.get(
     "/online",
-    response_model=List[SensorResponse],
+    response_model=ApiResponse[List[SensorResponse]],
     status_code=status.HTTP_200_OK,
     summary="List online sensors",
-    description="Return sensors that are currently online or which have reported within the supplied `within_seconds` window (default 300s).",
+    description="Return sensors that are currently online or that have reported recently.",
 )
-def get_online_sensors(within_seconds: int = 300, limit: int = 100, offset: int = 0, db: Session = Depends(get_db)):
+def get_online_sensors(
+    within_seconds: int = Query(
+        300,
+        ge=1,
+        examples={"default": {"value": 300, "summary": "Within how many seconds sensor should still be considered online."}},
+    ),
+    limit: int = Query(
+        100,
+        ge=1,
+        examples={"default": {"value": 100, "summary": "Page size."}},
+    ),
+    offset: int = Query(
+        0,
+        ge=0,
+        examples={"default": {"value": 0, "summary": "Page offset."}},
+    ),
+    db: Session = Depends(get_db),
+) -> dict:
     svc = SensorService(db)
-    return svc.get_online(within_seconds=within_seconds, limit=limit, offset=offset)
+    sensors = svc.get_online(within_seconds=within_seconds, limit=limit, offset=offset)
+    return make_paginated_response(
+        data=sensors,
+        message="Online sensors retrieved successfully.",
+        limit=limit,
+        offset=offset,
+        count=len(sensors),
+    )
 
 
 @router.patch(
     "/status",
-    response_model=SensorResponse,
+    response_model=ApiResponse[SensorResponse],
     status_code=status.HTTP_200_OK,
     summary="Patch sensor status",
-    description="Patch a sensor's status (e.g., set to OFFLINE, ERROR, ONLINE). Identify the sensor by `sensor_id`, `serial_number`, or `mac_address`.",
+    description="Patch a sensor's status based on its identifiers.",
 )
-def patch_sensor_status(payload: SensorStatusPatch, db: Session = Depends(get_db)):
+def patch_sensor_status(payload: SensorStatusPatch, db: Session = Depends(get_db)) -> dict:
     svc = SensorService(db)
     sensor = svc.patch_status(
         sensor_id=str(payload.sensor_id) if payload.sensor_id else None,
@@ -109,4 +134,4 @@ def patch_sensor_status(payload: SensorStatusPatch, db: Session = Depends(get_db
     )
     if not sensor:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sensor not found")
-    return sensor
+    return make_api_response(data=sensor, message="Sensor status updated successfully.")

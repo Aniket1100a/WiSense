@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from app.api.v1.endpoints.common import make_api_response
 from app.database.session import get_db
 from app.repositories.connect_repository import ConnectRepository
 from app.schemas.connect import ConnectResponse
+from app.schemas.response import ApiResponse
 from app.services.connect_service import ConnectService
 
 router = APIRouter()
@@ -16,12 +18,15 @@ def get_connect_service(db: Session = Depends(get_db)) -> ConnectService:
     return ConnectService(repository)
 
 
-@router.get("/connect", response_model=ConnectResponse, tags=["Connect"])
-def connect(service: ConnectService = Depends(get_connect_service)) -> ConnectResponse:
-    """Endpoint used by the frontend to verify backend connectivity for testing.
+@router.get(
+    "/connect",
+    response_model=ApiResponse[ConnectResponse],
+    tags=["Connect"],
+    summary="Verify backend connectivity",
+    description="Return a simple connectivity payload used by the frontend to validate API reachability.",
+)
+def connect(service: ConnectService = Depends(get_connect_service)) -> dict:
+    """Endpoint used by the frontend to verify backend connectivity for testing."""
 
-    This endpoint intentionally keeps logic minimal and returns a stable
-    JSON payload that frontend code can use to confirm an API connection.
-    """
-
-    return service.test_connection()
+    payload = service.test_connection()
+    return make_api_response(data=payload, message="Connection verified.")

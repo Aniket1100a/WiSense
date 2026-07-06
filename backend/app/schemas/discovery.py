@@ -14,7 +14,20 @@ class DiscoveredSensor(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
     extra: Optional[Dict[str, Any]] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "provider": "esp32",
+                "name": "lab-sensor",
+                "description": "Discovered sensor on the ESP32 network",
+                "serial_number": "ESP32-0001",
+                "mac_address": "aa:bb:cc:11:22:33",
+                "metadata": {"location": "lab"},
+                "extra": {"rssi": -60},
+            }
+        },
+    )
 
 
 class DiscoveryResult(BaseModel):
@@ -30,4 +43,23 @@ class DiscoveryResponse(BaseModel):
     sensors: List[DiscoveredSensor]
     timestamp: str
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "providers": ["esp32", "usb"],
+                "sensors": [
+                    {
+                        "provider": "esp32",
+                        "name": "lab-sensor",
+                        "description": "Discovered sensor on the ESP32 network",
+                        "serial_number": "ESP32-0001",
+                        "mac_address": "aa:bb:cc:11:22:33",
+                        "metadata": {"location": "lab"},
+                        "extra": {"rssi": -60},
+                    }
+                ],
+                "timestamp": "2026-07-06T12:00:00Z",
+            }
+        },
+    )

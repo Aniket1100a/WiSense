@@ -17,7 +17,17 @@ class RoomBase(BaseModel):
 
 
 class RoomCreate(RoomBase):
-    pass
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "name": "Main Lab",
+                "building": "Research Center",
+                "floor": "2",
+                "description": "Room used for sensor testing and validation.",
+            }
+        },
+    )
 
 
 class RoomUpdate(BaseModel):
@@ -26,7 +36,15 @@ class RoomUpdate(BaseModel):
     floor: Optional[str] = None
     description: Optional[str] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "name": "Main Lab Updated",
+                "description": "Updated room description.",
+            }
+        },
+    )
 
 
 class RoomResponse(RoomBase):
@@ -34,4 +52,17 @@ class RoomResponse(RoomBase):
     created_at: Optional[str]
     updated_at: Optional[str]
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": "00000000-0000-0000-0000-000000000000",
+                "name": "Main Lab",
+                "building": "Research Center",
+                "floor": "2",
+                "description": "Room used for sensor testing and validation.",
+                "created_at": "2026-07-06T12:00:00Z",
+                "updated_at": "2026-07-06T12:00:00Z",
+            }
+        },
+    )

@@ -22,7 +22,23 @@ class SensorRegister(BaseModel):
     room_id: Optional[UUID] = None
     meta: Optional[dict] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "name": "lobby-sensor",
+                "provider": "usb",
+                "serial_number": "USB-0001",
+                "mac_address": "aa:bb:cc:dd:ee:ff",
+                "firmware_version": "2.1.0",
+                "hardware_version": "B2",
+                "ip_address": "10.0.0.5",
+                "location": "lobby",
+                "room_id": "00000000-0000-0000-0000-000000000000",
+                "meta": {"location_hint": "Entrance"},
+            }
+        },
+    )
 
 
 class SensorHeartbeat(BaseModel):
@@ -32,7 +48,16 @@ class SensorHeartbeat(BaseModel):
     timestamp: Optional[str] = None
     status: Optional[SensorStatusEnum] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "serial_number": "USB-0001",
+                "timestamp": "2026-07-06T12:34:56.789Z",
+                "status": "ONLINE",
+            }
+        },
+    )
 
 
 class SensorDisconnect(BaseModel):
@@ -40,7 +65,14 @@ class SensorDisconnect(BaseModel):
     serial_number: Optional[str] = None
     mac_address: Optional[str] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "mac_address": "aa:bb:cc:dd:ee:ff",
+            }
+        },
+    )
 
 
 class SensorStatusPatch(BaseModel):
@@ -49,4 +81,12 @@ class SensorStatusPatch(BaseModel):
     mac_address: Optional[str] = None
     status: SensorStatusEnum
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "serial_number": "USB-0001",
+                "status": "ERROR",
+            }
+        },
+    )

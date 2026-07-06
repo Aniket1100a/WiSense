@@ -79,7 +79,19 @@ async def options_handler(full_path: str) -> JSONResponse:
 async def http_exception_handler(request: Request, exc: FastAPIHTTPException) -> JSONResponse:
     """Handle known HTTP exceptions with JSON responses."""
 
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    detail = exc.detail
+    message = detail if isinstance(detail, str) else "Request failed"
+    errors = detail if not isinstance(detail, str) else None
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "success": False,
+            "message": message,
+            "data": None,
+            "pagination": None,
+            "errors": errors,
+        },
+    )
 
 
 @app.exception_handler(RequestValidationError)
@@ -88,7 +100,13 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": exc.errors()},
+        content={
+            "success": False,
+            "message": "Validation failed",
+            "data": None,
+            "pagination": None,
+            "errors": exc.errors(),
+        },
     )
 
 
@@ -99,7 +117,13 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
     logger.exception("Unhandled exception occurred")
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "Internal server error"},
+        content={
+            "success": False,
+            "message": "Internal server error",
+            "data": None,
+            "pagination": None,
+            "errors": None,
+        },
     )
 
 

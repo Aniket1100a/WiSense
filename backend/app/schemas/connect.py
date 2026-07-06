@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ConnectResponse(BaseModel):
@@ -6,3 +6,12 @@ class ConnectResponse(BaseModel):
 
     ok: bool
     message: str
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "ok": True,
+                "message": "Backend connectivity verified.",
+            }
+        }
+    )

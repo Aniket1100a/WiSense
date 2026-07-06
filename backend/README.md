@@ -111,11 +111,25 @@ All models use timezone-aware `DateTime` columns and `UUID` primary keys (Postgr
 
 Base path: `/api/v1`
 
+- All successful API responses return a standardized wrapper:
+  ```json
+  {
+    "success": true,
+    "message": "...",
+    "data": {},
+    "pagination": null,
+    "errors": null
+  }
+  ```
+  - `data` holds the primary payload.
+  - `pagination` accompanies list endpoints and includes `limit`, `offset`, `count`, and optional `total`.
+  - `errors` contains validation or server error details when `success` is `false`.
+
 - Health
   - `GET /api/v1/health` — simple liveness and basic checks.
 
 - Connect (frontend/ngrok helper)
-  - `POST /api/v1/connect` — returns header and body helpful for ngrok / browser preflight validation.
+  - `GET /api/v1/connect` — returns a stable connectivity payload useful for frontend integration and ngrok validation.
 
 - Sensors
   - `POST /api/v1/sensors/` — create sensor. Body: `SensorCreate` schema.
@@ -144,7 +158,7 @@ The backend exposes device management endpoints under `/api/v1/sensors` to suppo
   - Purpose: Devices call this once on boot (or ops call it from provisioning) to create or reconcile a `Sensor` record.
   - Identification: If the payload includes `id`, that record is preferred. Otherwise the server attempts to match `serial_number` first, then `mac_address`.
   - Request schema: `SensorRegister` (fields: `name`, `provider`, optional `serial_number`, `mac_address`, `firmware_version`, `hardware_version`, `ip_address`, `location`, `room_id`, `metadata`).
-  - Response: `SensorResponse` (the created or updated sensor object).
+  - Response: API wrapper containing a `SensorResponse` payload.
   - Status codes: 201 Created on new or updated object, 400 on validation errors.
 
 - `POST /api/v1/sensors/heartbeat` — Heartbeat from devices.
@@ -260,6 +274,33 @@ The following files were added or updated to implement the device management com
 {
   "sensor_id": "<uuid>",
   "status": "ERROR"
+}
+```
+
+## Example standard response
+
+```json
+{
+  "success": true,
+  "message": "Sensors retrieved successfully.",
+  "data": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "name": "lab-temperaturesensor",
+      "provider": "esp32",
+      "sensor_type": "WiFi",
+      "status": "ONLINE",
+      "created_at": "2026-07-06T12:00:00Z",
+      "updated_at": "2026-07-06T12:00:00Z"
+    }
+  ],
+  "pagination": {
+    "limit": 100,
+    "offset": 0,
+    "count": 1,
+    "total": null
+  },
+  "errors": null
 }
 ```
 

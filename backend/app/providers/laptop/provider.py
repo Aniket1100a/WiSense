@@ -18,7 +18,16 @@ class LaptopProvider(BaseSensorProvider):
         raise NotImplementedError("Laptop provider disconnect not implemented in backend placeholder")
 
     def discover(self) -> List[Dict[str, Any]]:
-        return []
+        return [
+            {
+                "provider": "laptop",
+                "name": "laptop-discovery-1",
+                "description": "Mock laptop sensor",
+                "serial_number": "LAP-0001",
+                "mac_address": "aa:bb:cc:11:11:11",
+                "metadata": {"os": "mock-os"},
+            }
+        ]
 
     def register(self) -> Dict[str, Any]:
         return {"provider": "laptop", "info": {"os": "mock", "capabilities": ["wifi","ble"]}}

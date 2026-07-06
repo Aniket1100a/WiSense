@@ -18,7 +18,16 @@ class DatasetProvider(BaseSensorProvider):
         return None
 
     def discover(self) -> List[Dict[str, Any]]:
-        return []
+        return [
+            {
+                "provider": "dataset",
+                "name": "dataset-discovery-1",
+                "description": "Mock replay dataset sensor",
+                "serial_number": "DATA-0001",
+                "mac_address": "aa:bb:cc:33:33:33",
+                "metadata": {"type": "dataset"},
+            }
+        ]
 
     def register(self) -> Dict[str, Any]:
         return {"provider": "dataset", "info": {"type": "replay"}}

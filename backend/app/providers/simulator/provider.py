@@ -17,7 +17,16 @@ class SimulatorProvider(BaseSensorProvider):
         return None
 
     def discover(self) -> List[Dict[str, Any]]:
-        return []
+        return [
+            {
+                "provider": "simulator",
+                "name": "simulator-discovery-1",
+                "description": "Mock simulator sensor",
+                "serial_number": "SIM-0001",
+                "mac_address": "aa:bb:cc:44:44:44",
+                "metadata": {"type": "simulator"},
+            }
+        ]
 
     def register(self) -> Dict[str, Any]:
         return {"provider": "simulator", "info": {"mode": "mock"}}

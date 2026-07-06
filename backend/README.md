@@ -21,7 +21,29 @@ The backend implements a Sensor Platform foundation (Sensors, Rooms, Capabilitie
 - Fixed `SignalSample` model: imported missing `String` and `ForeignKey`, and added a `ForeignKey("sensors.id")` on `sensor_id` to ensure referential integrity.
 - Tests: unit tests pass locally: `3 passed, 1 warning`.
 
-These edits were applied to support the communication layer (device registration and lifecycle) and to fix import/name errors discovered while loading the FastAPI app.
+- Added a Discovery Engine for provider-based sensor discovery and discovery result management.
+
+These edits were applied to support the communication layer (device registration and lifecycle), the new provider abstraction layer, and discovery workflow support.
+
+## Discovery Engine (new)
+
+WiSense now includes a dedicated Discovery Engine that discovers sensors from every registered provider. Discovery is provider-driven and returns mock discovered sensors for now; it does not communicate with hardware.
+
+Discovery flow:
+
+1. `DiscoveryService` calls every registered provider via `ProviderFactory`.
+2. Each provider runs `discover()` and returns mock discovery rows.
+3. `DiscoveryService` merges results and removes duplicates.
+4. The frontend queries discovery providers, starts discovery, inspects latest results, and registers selected discovered sensors.
+
+Discovery endpoints:
+
+- `GET /api/v1/discovery/providers` — list supported provider names.
+- `POST /api/v1/discovery/start` — run discovery across all providers.
+- `GET /api/v1/discovery/results` — get the most recent discovery output.
+- `POST /api/v1/discovery/register` — register a discovered sensor into the Sensor Platform.
+
+This is intentionally a backend-only discovery engine; future hardware integration will be implemented inside provider `discover()` methods without changing the discovery endpoint contract.
 
 ## Provider architecture (new)
 
@@ -70,7 +92,7 @@ Why this design:
 - `app/schemas/` — Pydantic v2 schemas for create/update/response shapes.
 - `app/repositories/` — DB access layer: one repository per model; handles commits and queries.
 - `app/services/` — business orchestration layer; currently thin wrappers over repositories.
-- `app/api/v1/endpoints/` — versioned REST endpoints for health/connect and all sensor platform resources.
+- `app/api/v1/endpoints/` — versioned REST endpoints for health/connect, sensor platform resources, and discovery.
 - `app/api/v1/router.py` — aggregates v1 routers for inclusion in `main.py`.
 - `docs/RUVIEW_ANALYSIS.md` — high level architecture analysis & notes.
 

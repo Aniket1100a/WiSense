@@ -6,6 +6,7 @@ themselves without changing this code.
 
 from typing import Any, Dict, Optional
 
+import app.providers  # noqa: F401
 from app.providers.registry import ProviderRegistry
 
 
@@ -16,7 +17,6 @@ class ProviderFactory:
             return None
         cls = ProviderRegistry.get_provider_class(provider_name)
         if not cls:
-            # also try common aliases
             alias = provider_name.lower()
             cls = ProviderRegistry.get_provider_class(alias)
         if not cls:

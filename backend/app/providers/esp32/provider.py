@@ -17,7 +17,24 @@ class ESP32Provider(BaseSensorProvider):
         raise NotImplementedError("ESP32 hardware disconnect not implemented in backend placeholder")
 
     def discover(self) -> List[Dict[str, Any]]:
-        raise NotImplementedError("ESP32 discovery not implemented")
+        return [
+            {
+                "provider": "esp32",
+                "name": "esp32-discovery-1",
+                "description": "Mock ESP32 device 1",
+                "serial_number": "ESP32-0001",
+                "mac_address": "aa:bb:cc:00:00:01",
+                "metadata": {"type": "esp32"},
+            },
+            {
+                "provider": "esp32",
+                "name": "esp32-discovery-2",
+                "description": "Mock ESP32 device 2",
+                "serial_number": "ESP32-0002",
+                "mac_address": "aa:bb:cc:00:00:02",
+                "metadata": {"type": "esp32"},
+            },
+        ]
 
     def register(self) -> Dict[str, Any]:
         # Return mocked registration information

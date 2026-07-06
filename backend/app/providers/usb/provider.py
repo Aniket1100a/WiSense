@@ -17,7 +17,16 @@ class USBAdapterProvider(BaseSensorProvider):
         raise NotImplementedError()
 
     def discover(self) -> List[Dict[str, Any]]:
-        return []
+        return [
+            {
+                "provider": "usb_adapter",
+                "name": "usb-discovery-1",
+                "description": "Mock USB adapter sensor",
+                "serial_number": "USB-0001",
+                "mac_address": "aa:bb:cc:22:22:22",
+                "metadata": {"type": "usb"},
+            }
+        ]
 
     def register(self) -> Dict[str, Any]:
         return {"provider": "usb_adapter", "info": {"capabilities": ["usb-wifi"]}}

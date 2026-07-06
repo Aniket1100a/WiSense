@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.models.sensor import Sensor
 from app.repositories.sensor_repository import SensorRepository
+from app.providers.factory import ProviderFactory
+from typing import Any
 
 
 class SensorService:
@@ -31,7 +33,23 @@ class SensorService:
 
     # Management operations
     def register(self, data: dict) -> Sensor:
-        return self.repo.register_or_update(data)
+        sensor = self.repo.register_or_update(data)
+        # initialize provider instance for runtime integration (no hardware calls)
+        provider_name = None
+        if isinstance(data, dict):
+            provider_name = data.get("provider")
+        elif hasattr(sensor, "provider"):
+            provider_name = getattr(sensor, "provider")
+
+        provider = None
+        if provider_name:
+            provider = ProviderFactory.get(str(provider_name), sensor_info={"id": str(sensor.id)})
+        # attach provider instance for runtime use; do not persist
+        try:
+            setattr(sensor, "_provider", provider)
+        except Exception:
+            pass
+        return sensor
 
     def heartbeat(self, *, sensor_id: Optional[str] = None, serial_number: Optional[str] = None, mac_address: Optional[str] = None, timestamp=None, status: Optional[str] = None) -> Optional[Sensor]:
         sensor = None

@@ -23,6 +23,42 @@ The backend implements a Sensor Platform foundation (Sensors, Rooms, Capabilitie
 
 These edits were applied to support the communication layer (device registration and lifecycle) and to fix import/name errors discovered while loading the FastAPI app.
 
+## Provider architecture (new)
+
+WiSense now includes a provider abstraction layer that isolates hardware-specific behavior from the backend. The provider layer is strictly a communication and capability abstraction — it does not implement firmware or device-side code.
+
+Package: `app/providers`
+
+Structure:
+
+```
+providers/
+  __init__.py
+  base/
+    base_provider.py
+  factory.py
+  registry.py
+  esp32/provider.py
+  laptop/provider.py
+  usb/provider.py
+  dataset/provider.py
+  simulator/provider.py
+```
+
+Purpose:
+- `BaseSensorProvider` (abstract) defines the provider API: `connect`, `disconnect`, `discover`, `register`, `heartbeat`, `health`, `start_capture`, `stop_capture`, `get_capabilities`, `get_information`, `get_status`.
+- `ProviderRegistry` allows providers to register themselves automatically (no central factory edits required to add providers).
+- `ProviderFactory.get(provider_name, sensor_info)` returns a provider instance by looking up the registered provider class.
+- Placeholder providers (`ESP32Provider`, `LaptopProvider`, `USBAdapterProvider`, `DatasetProvider`, `SimulatorProvider`) implement the abstract interface; where direct hardware operations would occur they raise `NotImplementedError`. They return mocked information for `get_information`, `get_capabilities`, and `get_status`.
+
+Integration:
+- `SensorService.register()` now instantiates the correct provider via `ProviderFactory` and attaches the provider instance to the returned `Sensor` object as a runtime-only attribute (`_provider`). No hardware communication is performed during registration.
+
+Why this design:
+- New providers can be added by creating a module under `app/providers/` and using the `@register_provider("name")` decorator. The factory does not need to change.
+- The service layer remains the single place to initialize provider instances and to coordinate provider-driven workflows in future (captures, live health checks).
+
+
 ## Repository layout (important files)
 
 - `app/main.py` — FastAPI `app` instantiation, lifespan handlers, exception handlers, developer CORS middleware and OPTIONS preflight handling.

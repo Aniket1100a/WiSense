@@ -11,6 +11,7 @@ class DiscoveredSensor(BaseModel):
     description: Optional[str] = None
     serial_number: Optional[str] = None
     mac_address: Optional[str] = None
+    room_id: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
     extra: Optional[Dict[str, Any]] = None
 
@@ -23,6 +24,7 @@ class DiscoveredSensor(BaseModel):
                 "description": "Discovered sensor on the ESP32 network",
                 "serial_number": "ESP32-0001",
                 "mac_address": "aa:bb:cc:11:22:33",
+                "room_id": "00000000-0000-0000-0000-000000000000",
                 "metadata": {"location": "lab"},
                 "extra": {"rssi": -60},
             }

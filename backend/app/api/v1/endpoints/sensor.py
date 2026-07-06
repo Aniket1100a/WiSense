@@ -8,7 +8,7 @@ from app.api.v1.endpoints.common import make_api_response, make_paginated_respon
 from app.database.session import get_db
 from app.models.sensor import Sensor
 from app.schemas.response import ApiResponse
-from app.schemas.sensor import SensorCreate, SensorResponse, SensorUpdate
+from app.schemas.sensor import SensorCreate, SensorDetailResponse, SensorResponse, SensorUpdate
 from app.services.sensor_service import SensorService
 
 router = APIRouter(prefix="/sensors", tags=["Sensors"])
@@ -98,6 +98,20 @@ def get_sensor(sensor_id: UUID, db: Session = Depends(get_db)) -> dict:
     if not sensor:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sensor not found")
     return make_api_response(data=sensor, message="Sensor retrieved successfully.")
+
+
+@router.get(
+    "/{sensor_id}/details",
+    response_model=ApiResponse[SensorDetailResponse],
+    summary="Get sensor details",
+    description="Return sensor details, latest signal and recent activity for dashboard usage.",
+)
+def get_sensor_details(sensor_id: UUID, db: Session = Depends(get_db)) -> dict:
+    service = SensorService(db)
+    details = service.get_details(sensor_id=sensor_id)
+    if not details:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sensor not found")
+    return make_api_response(data=details, message="Sensor details retrieved successfully.")
 
 
 @router.put(

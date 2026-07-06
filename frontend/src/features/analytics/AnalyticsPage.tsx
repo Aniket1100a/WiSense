@@ -1,5 +1,5 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card } from '@/components/ui/card';
+import { Clock } from 'lucide-react';
 
 export default function AnalyticsPage() {
   return (
@@ -11,52 +11,15 @@ export default function AnalyticsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="occupancy" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="occupancy">Occupancy</TabsTrigger>
-          <TabsTrigger value="motion">Motion Levels</TabsTrigger>
-          <TabsTrigger value="signals">Signal Quality</TabsTrigger>
-        </TabsList>
-        <TabsContent value="occupancy" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Historical Occupancy Analysis</CardTitle>
-              <CardDescription>
-                Advanced charting capabilities would go here, utilizing Recharts or D3.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-[400px] flex items-center justify-center bg-muted/20 border border-dashed rounded-lg m-4">
-              <p className="text-muted-foreground">Interactive Timeline Chart Placeholder</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="motion">
-          <Card>
-            <CardHeader>
-              <CardTitle>Motion Heatmap</CardTitle>
-              <CardDescription>
-                Spatial analysis of motion over time.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-[400px] flex items-center justify-center bg-muted/20 border border-dashed rounded-lg m-4">
-              <p className="text-muted-foreground">Heatmap Visualization Placeholder</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="signals">
-          <Card>
-            <CardHeader>
-              <CardTitle>CSI Signal Quality</CardTitle>
-              <CardDescription>
-                SNR and interference metrics.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-[400px] flex items-center justify-center bg-muted/20 border border-dashed rounded-lg m-4">
-              <p className="text-muted-foreground">Signal Quality Metrics Placeholder</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <Card className="flex flex-col items-center justify-center py-24 text-center border-dashed">
+        <div className="bg-primary/10 p-4 rounded-full mb-4">
+          <Clock className="h-10 w-10 text-primary" />
+        </div>
+        <h3 className="text-xl font-medium">Coming Soon</h3>
+        <p className="text-muted-foreground max-w-md mt-2">
+          Analytics capabilities are currently being connected to the new backend APIs.
+        </p>
+      </Card>
     </div>
   );
 }

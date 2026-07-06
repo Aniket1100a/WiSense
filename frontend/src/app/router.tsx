@@ -5,6 +5,7 @@ import { AuthLayout } from '@/components/layouts/AuthLayout';
 import Dashboard from '@/features/dashboard/DashboardPage';
 import LiveMonitor from '@/features/dashboard/LiveMonitorPage';
 import Devices from '@/features/devices/DevicesPage';
+import Discovery from '@/features/discovery/DiscoveryPage';
 import Analytics from '@/features/analytics/AnalyticsPage';
 import Models from '@/features/models/ModelsPage';
 import Alerts from '@/features/alerts/AlertsPage';
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
       { path: 'dashboard', element: <Dashboard /> },
       { path: 'live', element: <LiveMonitor /> },
       { path: 'devices', element: <Devices /> },
+      { path: 'discovery', element: <Discovery /> },
       { path: 'analytics', element: <Analytics /> },
       { path: 'models', element: <Models /> },
       { path: 'alerts', element: <Alerts /> },

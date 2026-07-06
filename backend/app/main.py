@@ -11,6 +11,9 @@ from app.api.v1.endpoints.health import router as health_router
 from app.api.v1.router import router as api_v1_router
 from app.config.settings import Settings
 from app.core.logging import configure_logging
+from app.database.base import Base
+from app.database.session import engine
+from app.models import activity_log, capability, room, sensor, signalsample
 
 settings = Settings()
 configure_logging(settings.debug)
@@ -20,6 +23,9 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting WiSense backend application")
+    if settings.debug or settings.environment == "development":
+        logger.info("Creating missing database tables for development")
+        Base.metadata.create_all(bind=engine)
     yield
     logger.info("Shutting down WiSense backend application")
 

@@ -82,6 +82,9 @@ class Sensor(Base):
     signal_samples = relationship(
         "SignalSample", back_populates="sensor", cascade="all, delete-orphan", lazy="select"
     )
+    activity_logs = relationship(
+        "ActivityLog", back_populates="sensor", cascade="all, delete-orphan", lazy="select"
+    )
 
 
 Index("ix_sensors_mac_address", "mac_address")

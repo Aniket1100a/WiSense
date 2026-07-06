@@ -44,3 +44,12 @@ class SignalSampleRepository:
             stmt = stmt.where(SignalSample.timestamp <= end)
         stmt = stmt.limit(limit).offset(offset)
         return list(self.session.scalars(stmt))
+
+    def get_latest_for_sensor(self, sensor_id: UUID) -> Optional[SignalSample]:
+        stmt = (
+            select(SignalSample)
+            .where(SignalSample.sensor_id == sensor_id)
+            .order_by(SignalSample.timestamp.desc())
+            .limit(1)
+        )
+        return self.session.scalars(stmt).first()

@@ -1,0 +1,22 @@
+[project]
+name = "wisense-backend"
+version = "0.1.0"
+description = "WiSense backend foundation for AI-powered WiFi sensing."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.139.0",
+    "uvicorn==0.50.2",
+    "SQLAlchemy==2.0.51",
+    "pydantic==2.13.4",
+    "pydantic-settings==2.14.2",
+    "python-dotenv==1.2.2",
+    "psycopg2-binary==2.9.12",
+]
+
+[project.urls]
+homepage = "https://example.com"
+
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"

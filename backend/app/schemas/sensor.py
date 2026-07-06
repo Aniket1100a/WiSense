@@ -25,7 +25,7 @@ class SensorBase(BaseModel):
     location: Optional[str] = None
     room_id: Optional[UUID] = None
     is_active: Optional[bool] = True
-    metadata: Optional[dict] = None
+    meta: Optional[dict] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -48,7 +48,7 @@ class SensorUpdate(BaseModel):
     location: Optional[str] = None
     room_id: Optional[UUID] = None
     is_active: Optional[bool] = None
-    metadata: Optional[dict] = None
+    meta: Optional[dict] = None
 
     model_config = ConfigDict(from_attributes=True)
 

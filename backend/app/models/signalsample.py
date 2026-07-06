@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from sqlalchemy import DateTime, Float, Integer
+from sqlalchemy import DateTime, Float, Integer, String, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -15,7 +15,7 @@ class SignalSample(Base):
     __tablename__ = "signal_samples"
 
     id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    sensor_id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False)
+    sensor_id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), ForeignKey("sensors.id"), nullable=False)
     timestamp: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False)
     rssi: Mapped[float | None] = mapped_column(Float, nullable=True)
     channel: Mapped[int | None] = mapped_column(Integer, nullable=True)

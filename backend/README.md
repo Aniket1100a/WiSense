@@ -13,6 +13,16 @@ This file documents the current, actionable state of the WiSense backend (FastAP
 
 The backend implements a Sensor Platform foundation (Sensors, Rooms, Capabilities, SignalSamples) with CRUD-first APIs, request-scoped DB sessions, and developer-first CORS handling for ngrok/frontend testing.
 
+## Recent changes (quick)
+
+- Added device management endpoints for registration, heartbeat, disconnect, online listing, and status patch under `/api/v1/sensors`.
+- Introduced repository + service + schema layers for sensor management (`app/repositories/sensor_repository.py`, `app/services/sensor_service.py`, `app/schemas/sensor_management.py`, `app/api/v1/endpoints/sensor_management.py`).
+- Renamed model attribute `metadata` → `meta` to avoid SQLAlchemy Declarative API reserved-name conflict; column name remains `metadata` in the DB. Client payloads may still include `metadata` and the backend will normalize it to `meta`.
+- Fixed `SignalSample` model: imported missing `String` and `ForeignKey`, and added a `ForeignKey("sensors.id")` on `sensor_id` to ensure referential integrity.
+- Tests: unit tests pass locally: `3 passed, 1 warning`.
+
+These edits were applied to support the communication layer (device registration and lifecycle) and to fix import/name errors discovered while loading the FastAPI app.
+
 ## Repository layout (important files)
 
 - `app/main.py` — FastAPI `app` instantiation, lifespan handlers, exception handlers, developer CORS middleware and OPTIONS preflight handling.
@@ -67,6 +77,148 @@ Base path: `/api/v1`
   - `POST /api/v1/signals/` — create a signal sample.
   - `GET /api/v1/signals/` — list samples (filter: `sensor_id`, `start`, `end`, pagination).
   - `GET /api/v1/signals/{id}` — get sample by UUID.
+
+### Sensor management (registration & lifecycle)
+
+The backend exposes device management endpoints under `/api/v1/sensors` to support multiple providers (ESP32, laptop, USB adapters, Intel CSI, dataset replay, and future providers). These endpoints form the communication layer only — firmware and device-side code are out of scope.
+
+- `POST /api/v1/sensors/register` — Register or update a sensor.
+  - Purpose: Devices call this once on boot (or ops call it from provisioning) to create or reconcile a `Sensor` record.
+  - Identification: If the payload includes `id`, that record is preferred. Otherwise the server attempts to match `serial_number` first, then `mac_address`.
+  - Request schema: `SensorRegister` (fields: `name`, `provider`, optional `serial_number`, `mac_address`, `firmware_version`, `hardware_version`, `ip_address`, `location`, `room_id`, `metadata`).
+  - Response: `SensorResponse` (the created or updated sensor object).
+  - Status codes: 201 Created on new or updated object, 400 on validation errors.
+
+- `POST /api/v1/sensors/heartbeat` — Heartbeat from devices.
+  - Purpose: Devices periodically POST heartbeats to signal liveness. Accepts one of `sensor_id`, `serial_number`, or `mac_address` to identify the device.
+  - Request schema: `SensorHeartbeat` (fields: `sensor_id`, `serial_number`, `mac_address`, optional ISO `timestamp`, optional `status`).
+  - Behavior: Updates `last_seen` to the provided timestamp (or server UTC now) and sets `status` to `ONLINE` by default unless `status` provided.
+  - Response: `SensorResponse` (updated sensor).
+  - Status codes: 200 OK, 404 if the sensor cannot be found by provided identifiers.
+
+- `POST /api/v1/sensors/disconnect` — Explicit disconnect.
+  - Purpose: Devices or management tools call to mark a sensor offline in case of graceful shutdown or managed disconnect.
+  - Request schema: `SensorDisconnect` (`sensor_id` | `serial_number` | `mac_address`).
+  - Behavior: Sets `status` to `OFFLINE` and updates `last_seen`.
+  - Response: `SensorResponse`.
+  - Status codes: 200 OK, 404 if not found.
+
+- `GET /api/v1/sensors/online` — List currently online sensors.
+  - Purpose: Query currently online sensors for UI or tooling.
+  - Query params: `within_seconds` (int, default 300), `limit`, `offset`.
+  - Behavior: Returns sensors with `status == ONLINE` or with `last_seen` within the `within_seconds` window.
+  - Response: List[`SensorResponse`].
+  - Status codes: 200 OK.
+
+- `PATCH /api/v1/sensors/status` — Patch status for a sensor.
+  - Purpose: Administrative endpoint to set sensor status to `OFFLINE`, `ERROR`, `ONLINE`, etc.
+  - Request schema: `SensorStatusPatch` (`sensor_id` | `serial_number` | `mac_address`, `status`).
+  - Response: `SensorResponse`.
+  - Status codes: 200 OK, 404 if sensor not found.
+
+All management endpoints are documented (summary + description) in the code and will appear in Swagger UI at `/docs`.
+
+## Files added/modified for sensor management
+
+The following files were added or updated to implement the device management communication layer. Below each file is a concise explanation of what's in it and why it changed.
+
+- `app/repositories/sensor_repository.py` (modified)
+  - Added helper methods:
+    - `get_by_serial(serial_number)` / `get_by_mac(mac_address)` — lookup by secondary identifiers.
+    - `register_or_update(data: dict)` — create or update a sensor record based on `id`, `serial_number`, or `mac_address`.
+    - `update_heartbeat(sensor, last_seen, status)` — update `last_seen` and optionally status.
+    - `set_status(sensor, status)` — set explicit status and refresh record.
+    - `get_online(within_seconds, limit, offset)` — return sensors considered online (status==ONLINE or recently seen).
+  - Purpose: Keep all persistence logic and commit/refresh semantics inside the repository so services and API code remain simple.
+
+- `app/services/sensor_service.py` (modified)
+  - Added management methods:
+    - `register(data: dict)` — delegates to repository `register_or_update`.
+    - `heartbeat(sensor_id|serial_number|mac_address, timestamp, status)` — resolves identifier and updates heartbeat.
+    - `disconnect(...)` — resolves identifier and marks `OFFLINE`.
+    - `patch_status(...)` — resolves identifier and sets provided status.
+    - `get_online(...)` — query online sensors via repository.
+  - Purpose: Orchestrates identifier resolution and higher-level flows; single place for future business rules (rate-limiting, audit logs).
+
+- `app/schemas/sensor_management.py` (added)
+  - New Pydantic schemas for management endpoints: `SensorRegister`, `SensorHeartbeat`, `SensorDisconnect`, `SensorStatusPatch`.
+  - Purpose: Validate incoming requests and produce clear OpenAPI payload documentation.
+
+- `app/api/v1/endpoints/sensor_management.py` (added)
+  - New endpoint module that exposes the five management routes under `/api/v1/sensors/`:
+    - `/register`, `/heartbeat`, `/disconnect`, `/online`, `/status` (PATCH).
+  - Each route includes `summary` and `description` so they appear properly in Swagger.
+  - Uses `get_db` dependency and `SensorService` to perform operations.
+
+- `app/api/v1/router.py` (modified)
+  - Includes the new `sensor_management` router so endpoints are mounted under `/api/v1`.
+
+## Frontend considerations (how UI will display devices)
+
+- Device discovery and listing:
+  - The frontend should call `GET /api/v1/sensors/online` to populate the live device list. Use `within_seconds` to tune staleness.
+- Device identity and details:
+  - Each `SensorResponse` contains provider, status, last_seen, firmware/hardware versions, and optional `room_id` to enable mapping in UI.
+- Heartbeat-driven UI updates:
+  - When a heartbeat arrives, the backend updates `last_seen` and `status`. The frontend can poll or use server-sent events / WebSocket later (not implemented) to get real-time updates.
+
+## Example payloads
+
+- Register (POST `/api/v1/sensors/register`):
+
+```json
+{
+  "name": "esp32-sensor-1",
+  "provider": "esp32",
+  "serial_number": "ESP32-0001",
+  "mac_address": "aa:bb:cc:dd:ee:ff",
+  "firmware_version": "1.2.3",
+  "hardware_version": "revA",
+  "ip_address": "192.168.1.55",
+  "location": "lab-1"
+}
+```
+
+- Heartbeat (POST `/api/v1/sensors/heartbeat`):
+
+```json
+{
+  "serial_number": "ESP32-0001",
+  "timestamp": "2026-07-06T12:34:56.789Z"
+}
+```
+
+- Disconnect (POST `/api/v1/sensors/disconnect`):
+
+```json
+{
+  "mac_address": "aa:bb:cc:dd:ee:ff"
+}
+```
+
+- Patch status (PATCH `/api/v1/sensors/status`):
+
+```json
+{
+  "sensor_id": "<uuid>",
+  "status": "ERROR"
+}
+```
+
+## Security note
+
+These management endpoints are sensitive. Add authentication and rate-limiting (e.g., token-based device auth, API keys, or mTLS) before accepting traffic from untrusted networks.
+
+## Next steps
+
+1. Add tests for new endpoints and repository/service flows (I can scaffold these).
+2. Optionally add device authentication (signed registration tokens or pre-shared keys).
+3. Consider a real-time push architecture (WebSocket or SSE) for immediate frontend updates.
+
+---
+
+File location: `WiSense/backend/README.md`
+
 
 Request/response schema details are defined in `app/schemas/` and use Pydantic v2 `ConfigDict(from_attributes=True)` to permit returning ORM objects directly where appropriate.
 

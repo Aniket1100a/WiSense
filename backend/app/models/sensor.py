@@ -65,7 +65,7 @@ class Sensor(Base):
     )
     last_seen: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    metadata: Mapped[dict | None] = mapped_column(String, nullable=True)
+    meta: Mapped[str | None] = mapped_column("metadata", String, nullable=True)
 
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
